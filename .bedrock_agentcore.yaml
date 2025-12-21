@@ -30,7 +30,7 @@ agents:
     bedrock_agentcore:
       agent_id: hello_agent-kzxOU1FBzD
       agent_arn: arn:aws:bedrock-agentcore:ap-northeast-1:585768166368:runtime/hello_agent-kzxOU1FBzD
-      agent_session_id: 5c6af5af-c3f3-4450-a926-16e0ad0995c2
+      agent_session_id: d28f447b-c087-4c77-ab00-b15453c6e729
     codebuild:
       project_name: null
       execution_role: null

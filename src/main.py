@@ -81,69 +81,77 @@ def log_claude_projects_files() -> None:
         log.error(f"Error reading Claude projects directory: {e}")
 
 
-@app.entrypoint
-async def invoke(payload, context):
+@app.websocket
+async def websocket_handler(websocket, context):
     """
-    Main entrypoint for the AgentCore Runtime.
-    Uses Claude Agent SDK with Anthropic API for inference.
+    WebSocket handler for bidirectional streaming.
+    Enables real-time, continuous conversations with interrupt support.
     """
+    log.info(f"WebSocket connection established. Context: {context}")
+
     # Log Claude projects files at the start
     log_claude_projects_files()
 
     session_id = getattr(context, "session_id", "default")
-    prompt = payload.get("prompt", "")
+    log.info(f"Processing WebSocket connection for session: {session_id}")
 
-    if not prompt:
-        yield "Error: No prompt provided"
-        return
-
-    log.info(f"Processing request for session: {session_id}")
-
-    # Configure Claude Agent SDK options
-    options = ClaudeAgentOptions(
-        # Use Anthropic API directly
-        model="claude-sonnet-4-5",
-        # Enable basic tools
-        allowed_tools=[
-            "Read",
-            "Write",
-            "Bash",
-            "Edit",
-            "Glob",
-            "Grep",
-            "mcp__tools__add_numbers",
-            "mcp__tools__multiply_numbers",
-        ],
-        # Add custom MCP tools
-        mcp_servers={"tools": tools_server},
-        # Auto-accept file edits for smoother interaction
-        permission_mode="acceptEdits",
-        # System prompt
-        system_prompt="""
-        You are a helpful assistant with various capabilities:
-        - You can read, write, and edit files
-        - You can run bash commands
-        - You can use custom tools like add_numbers and multiply_numbers
-        - You can search through files using Glob and Grep
-
-        Always be helpful, clear, and precise in your responses.
-        When using tools, explain what you're doing.
-        """,
-        # Execution limits
-        max_turns=10,
-        # Enable streaming for partial messages
-        include_partial_messages=True,
-    )
+    # Accept the WebSocket connection
+    await websocket.accept()
 
     try:
+        # Configure Claude Agent SDK options
+        options = ClaudeAgentOptions(
+            # Use Anthropic API directly
+            model="claude-sonnet-4-5",
+            # Enable basic tools
+            allowed_tools=[
+                "Read",
+                "Write",
+                "Bash",
+                "Edit",
+                "Glob",
+                "Grep",
+                "mcp__tools__add_numbers",
+                "mcp__tools__multiply_numbers",
+            ],
+            # Add custom MCP tools
+            mcp_servers={"tools": tools_server},
+            # Auto-accept file edits for smoother interaction
+            permission_mode="acceptEdits",
+            # System prompt
+            system_prompt="""
+            You are a helpful assistant with various capabilities:
+            - You can read, write, and edit files
+            - You can run bash commands
+            - You can use custom tools like add_numbers and multiply_numbers
+            - You can search through files using Glob and Grep
+
+            Always be helpful, clear, and precise in your responses.
+            When using tools, explain what you're doing.
+            """,
+            # Execution limits
+            max_turns=10,
+            # Enable streaming for partial messages
+            include_partial_messages=True,
+        )
+
         # Use Claude SDK Client
         async with ClaudeSDKClient(options=options) as client:
-            # Send the user's query
+            # Receive message from client (single message per connection)
+            data = await websocket.receive_json()
+            log.info(f"Received WebSocket message: {data}")
+
+            prompt = data.get("prompt", data.get("inputText", ""))
+            if not prompt:
+                await websocket.send_json({"error": "No prompt or inputText provided"})
+                return
+
+            # Send the user's query to Claude
             await client.query(prompt)
 
             tool_map: dict[str, str] = {}
 
-            # Stream the response
+            # Stream the response back to client
             async for msg in client.receive_response():
                 log.info("")
 
@@ -154,13 +162,18 @@ async def invoke(payload, context):
                         if isinstance(block, TextBlock):
                             log.info("UserMessage > TextBlock")
                             log.info(f"Text: {block.text}")
-                            yield block.text
+                            await websocket.send_json({"result": block.text})
                         elif isinstance(block, ToolUseBlock):
                             tool_map[block.id] = block.name
-                            yield f"{block.name} tool is proccessed..."
+                            await websocket.send_json(
+                                {"result": f"{block.name} tool processing..."}
+                            )
                         elif isinstance(block, ToolResultBlock):
                             tool_name = tool_map[block.tool_use_id]
-                            yield f"{tool_name} tool was executed."
+                            await websocket.send_json(
+                                {"result": f"{tool_name} tool was executed."}
+                            )
+
                 elif isinstance(msg, AssistantMessage):
                     log.info("AssistantMessage")
                     log.info(f"Claude: {msg}")
@@ -168,30 +181,53 @@ async def invoke(payload, context):
                         if isinstance(block, TextBlock):
                             log.info("AssistantMessage > TextBlock")
                             log.info(f"Text: {block.text}")
-                            yield block.text
+                            await websocket.send_json({"result": block.text})
                         elif isinstance(block, ToolUseBlock):
                             tool_map[block.id] = block.name
-                            yield f"{block.name} tool is proccessed..."
+                            await websocket.send_json(
+                                {"result": f"{block.name} tool processing..."}
+                            )
                         elif isinstance(block, ToolResultBlock):
                             tool_name = tool_map[block.tool_use_id]
-                            yield f"{tool_name} tool was executed."
+                            await websocket.send_json(
+                                {"result": f"{tool_name} tool was executed."}
+                            )
+
                 elif isinstance(msg, SystemMessage):
                     log.info("SystemMessage")
                     log.info(f"System: {msg}")
+                    await websocket.send_json({"result": f"System: {msg}"})
+
                 elif isinstance(msg, ResultMessage):
                     log.info("ResultMessage")
                     log.info(f"Result: {msg}")
                     log.info(f"Cost: {msg.total_cost_usd}")
+                    await websocket.send_json(
+                        {"result": f"Completed. Cost: ${msg.total_cost_usd}"}
+                    )
+
                 elif isinstance(msg, StreamEvent):
                     log.info("StreamEvent")
                     log.info(f"Event: {msg.event}")
+                    await websocket.send_json({"result": f"StreamEvent: {msg.event}"})
+
                 else:
                     log.warning(f"Unexpected message type found: {type(msg)}")
+                    await websocket.send_json(
+                        {"result": f"Unexpected message: {type(msg)}"}
+                    )
 
     except Exception as e:
-        error_msg = f"Error processing request: {str(e)}"
+        error_msg = f"WebSocket connection error: {str(e)}"
         log.error(error_msg)
-        yield error_msg
+        try:
+            await websocket.send_json({"error": error_msg})
+        except Exception:
+            log.error("Failed to send error message to client")
+
+    finally:
+        log.info("Closing WebSocket connection")
+        await websocket.close()
 
 
 if __name__ == "__main__":
