@@ -100,9 +100,6 @@ async def _handle_websocket(websocket, prompt: str, session_id: str | None):
             message["session_id"] = session_id
         await websocket.send(json.dumps(message))
 
-        # Track streaming state
-        in_message_stream = False
-
         # Receive streaming responses
         async for message in websocket:
             data = json.loads(message)
@@ -119,14 +116,19 @@ async def _handle_websocket(websocket, prompt: str, session_id: str | None):
                 print(f"\n⚠️  Permission required for tool: {tool_name}")
                 print(f"   Input: {json.dumps(tool_input, indent=2)}")
 
-                # Ask user for approval
+                # Ask user for approval (non-blocking async input)
+                loop = asyncio.get_event_loop()
+                approved = False
+
                 while True:
-                    response = input("   Approve? (y/n): ").strip().lower()
+                    # Run input() in thread pool to avoid blocking the event loop
+                    response = await loop.run_in_executor(
+                        None, lambda: input("   Approve? (y/n): ").strip().lower()
+                    )
                     if response in ["y", "n"]:
+                        approved = response == "y"
                         break
                     print("   Please enter 'y' or 'n'")
-
-                approved = response == "y"
 
                 # Send approval response back to agent
                 await websocket.send(
@@ -142,29 +144,27 @@ async def _handle_websocket(websocket, prompt: str, session_id: str | None):
 
                 continue
 
-            # Handle StreamEvent for message_start and message_stop
+            # Handle event-based streaming messages
             if "event" in data:
-                event = data["event"]
+                event_data = data["event"]
 
-                if event == "content_block_start":
-                    in_message_stream = True
+                if event_data == "content_block_start":
                     # Don't print anything, just mark the start
+                    pass
 
-                elif event == "content_block_stop":
-                    in_message_stream = False
+                elif event_data == "content_block_stop":
                     # Print newline at the end of streaming
                     print()
 
-            # Handle result content
+                else:
+                    # Stream data: "🔧 tool_name", "I'll use", " the multiply...", etc.
+                    print(event_data, end="", flush=True)
+
+            # Handle result content (non-streaming messages)
             if "result" in data:
                 result = data["result"]
-
-                if in_message_stream:
-                    # During streaming: print without newline (concatenate)
-                    print(result, end="", flush=True)
-                else:
-                    # Outside streaming: print with newline
-                    print(result)
+                # Always print with newline (these are discrete results)
+                print(result)
 
                 # Check for completion
                 if "Completed" in result:

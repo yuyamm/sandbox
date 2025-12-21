@@ -62,7 +62,7 @@ ws-dev:
 		echo "  make ws-dev prompt='Continue' session_id='claude-123' agent_session_id='agent-456'"; \
 		exit 1; \
 	fi
-	@uv run python websocket_client.py "$(prompt)" "$(session_id)" "$(agent_session_id)"
+	@uv run python client/websocket_client.py "$(prompt)" "$(session_id)" "$(agent_session_id)"
 
 # WebSocket client (production)
 ws:
@@ -78,7 +78,7 @@ ws:
 	fi; \
 	runtime_arn="arn:aws:bedrock-agentcore:ap-northeast-1:585768166368:runtime/hello_agent-kzxOU1FBzD"; \
 	ws_url="wss://bedrock-agentcore.ap-northeast-1.amazonaws.com/runtimes/$$runtime_arn/ws"; \
-	uv run python websocket_client.py "$(prompt)" "$(session_id)" "$(agent_session_id)" "$$ws_url" "$$runtime_arn"
+	uv run python client/websocket_client.py "$(prompt)" "$(session_id)" "$(agent_session_id)" "$$ws_url" "$$runtime_arn"
 
 # Show help
 help:
