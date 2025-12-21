@@ -17,18 +17,19 @@
 - **パッケージマネージャー**: [uv](https://github.com/astral-sh/uv) - Astral製の高速Pythonパッケージマネージャー
 - **Linter/Formatter**: [ruff](https://github.com/astral-sh/ruff) - 高速なPython linter/formatter
 - **型チェッカー**: [ty](https://github.com/astral-sh/ty) - Astral製の型チェッカー
+- **セキュリティスキャナー**: [pip-audit](https://github.com/pypa/pip-audit) - 依存関係の脆弱性チェック
 
 ### 開発ワークフロー
 
 ```bash
 # 依存関係のインストール（lockファイル基準、意図しないバージョンアップを防止）
-uv sync
+uv sync --all-extras --dev
 
 # lockファイルの更新（pyproject.tomlの変更を反映）
 uv lock
 
 # 依存関係を最新バージョンに更新したい場合のみ
-uv sync --upgrade
+uv sync --upgrade --all-extras --dev
 
 # コードフォーマット
 uv run ruff format .
@@ -38,6 +39,9 @@ uv run ruff check .
 
 # 型チェック
 uv run ty check
+
+# セキュリティスキャン
+uv run pip-audit
 
 # Pre-commit hooks実行
 pre-commit run --all-files

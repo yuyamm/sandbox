@@ -28,3 +28,12 @@ repos:
           language: system
           types: [python]
           pass_filenames: false
+
+# pip-audit - Security vulnerability scanner
+-   repo: local
+    hooks:
+      -   id: pip-audit
+          name: pip-audit
+          entry: uv run pip-audit
+          language: system
+          pass_filenames: false
