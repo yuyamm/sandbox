@@ -57,9 +57,9 @@ tools_server = create_sdk_mcp_server(
 
 def log_claude_projects_files() -> None:
     """
-    Log the list of files in ~/.claude/projects/ directory.
+    Log the list of files in ~/.claude/projects/-var-task/ directory.
     """
-    projects_dir = Path.home() / ".claude" / "projects"
+    projects_dir = Path.home() / ".claude" / "projects" / "-var-task"
 
     if not projects_dir.exists():
         log.warning(f"Claude projects directory does not exist: {projects_dir}")
@@ -76,7 +76,7 @@ def log_claude_projects_files() -> None:
 
         for file_path in sorted(files):
             file_type = "DIR" if file_path.is_dir() else "FILE"
-            print(f"  [{file_type}] {file_path.name}")
+            log.info(f"  [{file_type}] {file_path.name}")
     except Exception as e:
         log.error(f"Error reading Claude projects directory: {e}")
 
@@ -145,15 +145,15 @@ async def invoke(payload, context):
 
             # Stream the response
             async for msg in client.receive_response():
-                print("\n")
+                log.info("")
 
                 if isinstance(msg, UserMessage):
-                    print("UserMessage")
-                    print(f"User: {msg}")
+                    log.info("UserMessage")
+                    log.info(f"User: {msg}")
                     for block in msg.content:
                         if isinstance(block, TextBlock):
-                            print("UserMessage > TextBlock")
-                            print(f"Text: {block.text}")
+                            log.info("UserMessage > TextBlock")
+                            log.info(f"Text: {block.text}")
                             yield block.text
                         elif isinstance(block, ToolUseBlock):
                             tool_map[block.id] = block.name
@@ -162,12 +162,12 @@ async def invoke(payload, context):
                             tool_name = tool_map[block.tool_use_id]
                             yield f"{tool_name} tool was executed."
                 elif isinstance(msg, AssistantMessage):
-                    print("AssistantMessage")
-                    print(f"Claude: {msg}")
+                    log.info("AssistantMessage")
+                    log.info(f"Claude: {msg}")
                     for block in msg.content:
                         if isinstance(block, TextBlock):
-                            print("AssistantMessage > TextBlock")
-                            print(f"Text: {block.text}")
+                            log.info("AssistantMessage > TextBlock")
+                            log.info(f"Text: {block.text}")
                             yield block.text
                         elif isinstance(block, ToolUseBlock):
                             tool_map[block.id] = block.name
@@ -176,17 +176,17 @@ async def invoke(payload, context):
                             tool_name = tool_map[block.tool_use_id]
                             yield f"{tool_name} tool was executed."
                 elif isinstance(msg, SystemMessage):
-                    print("SystemMessage")
-                    print(f"System: {msg}")
+                    log.info("SystemMessage")
+                    log.info(f"System: {msg}")
                 elif isinstance(msg, ResultMessage):
-                    print("ResultMessage")
-                    print(f"Result: {msg}")
-                    print(f"Cost: {msg.total_cost_usd}")
+                    log.info("ResultMessage")
+                    log.info(f"Result: {msg}")
+                    log.info(f"Cost: {msg.total_cost_usd}")
                 elif isinstance(msg, StreamEvent):
-                    print("StreamEvent")
-                    print(f"Event: {msg.event}")
+                    log.info("StreamEvent")
+                    log.info(f"Event: {msg.event}")
                 else:
-                    print(f"Unexpected message type found: {type(msg)}")
+                    log.warning(f"Unexpected message type found: {type(msg)}")
 
     except Exception as e:
         error_msg = f"Error processing request: {str(e)}"

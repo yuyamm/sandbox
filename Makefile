@@ -25,7 +25,12 @@ invoke-dev:
 
 # Launch agent
 launch:
-	uv run agentcore launch
+	@if [ ! -f .env ]; then \
+		echo "Error: .env file not found. Please create .env file from .env.example"; \
+		exit 1; \
+	fi
+	@ENV_ARGS=$$(grep -v '^#' .env | grep -v '^$$' | sed 's/^/--env /'); \
+	uv run agentcore launch $$ENV_ARGS
 
 # Show help
 help:
