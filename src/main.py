@@ -153,8 +153,6 @@ async def websocket_handler(websocket, context):
 
             # Stream the response back to client
             async for msg in client.receive_response():
-                log.info("")
-
                 if isinstance(msg, UserMessage):
                     log.info("UserMessage")
                     log.info(f"User: {msg}")
@@ -165,11 +163,13 @@ async def websocket_handler(websocket, context):
                             await websocket.send_json({"result": block.text})
                         elif isinstance(block, ToolUseBlock):
                             tool_map[block.id] = block.name
+                            log.info(f"Tool Start: {block.name}")
                             await websocket.send_json(
                                 {"result": f"{block.name} tool processing..."}
                             )
                         elif isinstance(block, ToolResultBlock):
                             tool_name = tool_map[block.tool_use_id]
+                            log.info(f"Tool Stop: {tool_name}")
                             await websocket.send_json(
                                 {"result": f"{tool_name} tool was executed."}
                             )
@@ -184,19 +184,20 @@ async def websocket_handler(websocket, context):
                             await websocket.send_json({"result": block.text})
                         elif isinstance(block, ToolUseBlock):
                             tool_map[block.id] = block.name
+                            log.info(f"Tool Start: {block.name}")
                             await websocket.send_json(
                                 {"result": f"{block.name} tool processing..."}
                             )
                         elif isinstance(block, ToolResultBlock):
                             tool_name = tool_map[block.tool_use_id]
+                            log.info(f"Tool Stop: {tool_name}")
                             await websocket.send_json(
-                                {"result": f"{tool_name} tool was executed."}
+                                {"result": f"{tool_name} tool executed."}
                             )
 
                 elif isinstance(msg, SystemMessage):
                     log.info("SystemMessage")
                     log.info(f"System: {msg}")
-                    await websocket.send_json({"result": f"System: {msg}"})
 
                 elif isinstance(msg, ResultMessage):
                     log.info("ResultMessage")
@@ -208,14 +209,19 @@ async def websocket_handler(websocket, context):
 
                 elif isinstance(msg, StreamEvent):
                     log.info("StreamEvent")
-                    log.info(f"Event: {msg.event}")
-                    await websocket.send_json({"result": f"StreamEvent: {msg.event}"})
+                    log.info(f"Event: {msg}")
+                    if msg.event["type"] == "message_start":
+                        await websocket.send_json({"event": "message_start"})
+                    elif msg.event["type"] == "message_stop":
+                        await websocket.send_json({"event": "message_stop"})
+                    elif msg.event["type"] == "content_block_delta":
+                        delta_text = msg.event.get("delta", {}).get("text", "")
+                        await websocket.send_json({"result": delta_text})
+                    else:
+                        pass
 
                 else:
                     log.warning(f"Unexpected message type found: {type(msg)}")
-                    await websocket.send_json(
-                        {"result": f"Unexpected message: {type(msg)}"}
-                    )
 
     except Exception as e:
         error_msg = f"WebSocket connection error: {str(e)}"
