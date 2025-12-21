@@ -1,0 +1,54 @@
+# Ruff Configuration
+# Documentation: https://docs.astral.sh/ruff/configuration/
+
+# Pythonバージョン
+target-version = "py312"
+
+# 1行の最大文字数
+line-length = 88  # Blackと同じデフォルト
+
+# インデント幅
+indent-width = 4
+
+# 除外パターン
+exclude = [".git", ".venv", "__pycache__", "*.egg-info"]
+
+[lint]
+# 有効化するルールセット
+# 参考: https://docs.astral.sh/ruff/rules/
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+
+# 無効化するルール（必要に応じて追加）
+ignore = [
+    # 例: "E501",  # line too long (line-lengthで管理)
+]
+
+# ファイル/ディレクトリごとの除外ルール
+[lint.per-file-ignores]
+# 例: テストファイルではassertの使用を許可
+# "tests/**/*.py" = ["S101"]
+
+# 自動修正可能なルールを指定
+fixable = ["ALL"]
+unfixable = []
+
+# isort設定
+[lint.isort]
+known-first-party = ["sandbox"]  # プロジェクト名
+
+[format]
+# フォーマット設定
+quote-style = "double"              # ダブルクォート優先
+indent-style = "space"              # スペースインデント
+skip-magic-trailing-comma = false   # マジックトレーリングカンマを尊重
+line-ending = "auto"                # 自動検出

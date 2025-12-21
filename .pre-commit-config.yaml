@@ -2,9 +2,29 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.2.0
+    rev: v6.0.0
     hooks:
     -   id: trailing-whitespace
     -   id: end-of-file-fixer
     -   id: check-yaml
     -   id: check-added-large-files
+
+# Ruff - Python linter and formatter
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.10
+    hooks:
+      # Run the linter
+      -   id: ruff
+          args: [--fix]
+      # Run the formatter
+      -   id: ruff-format
+
+# ty - Type checker (using local hook since no official pre-commit repo exists yet)
+-   repo: local
+    hooks:
+      -   id: ty
+          name: ty type checker
+          entry: uv run ty check
+          language: system
+          types: [python]
+          pass_filenames: false
