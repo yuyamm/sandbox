@@ -107,11 +107,11 @@ async def _handle_websocket(websocket, prompt: str, session_id: str):
             if "event" in data:
                 event = data["event"]
 
-                if event == "message_start":
+                if event == "content_block_start":
                     in_message_stream = True
                     # Don't print anything, just mark the start
 
-                elif event == "message_stop":
+                elif event == "content_block_stop":
                     in_message_stream = False
                     # Print newline at the end of streaming
                     print()

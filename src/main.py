@@ -211,9 +211,9 @@ async def websocket_handler(websocket, context):
                     log.info("StreamEvent")
                     log.info(f"Event: {msg}")
                     if msg.event["type"] == "content_block_start":
-                        await websocket.send_json({"event": "message_start"})
+                        await websocket.send_json({"event": "content_block_start"})
                     elif msg.event["type"] == "content_block_stop":
-                        await websocket.send_json({"event": "message_stop"})
+                        await websocket.send_json({"event": "content_block_stop"})
                     elif msg.event["type"] == "content_block_delta":
                         if msg.event["delta"]["type"] == "text_delta":
                             text = msg.event.get("delta", {}).get("text", "")
