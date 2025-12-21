@@ -171,7 +171,7 @@ async def websocket_handler(websocket, context):
                             tool_name = tool_map[block.tool_use_id]
                             log.info(f"Tool Stop: {tool_name}")
                             await websocket.send_json(
-                                {"result": f"{tool_name} tool was executed."}
+                                {"result": f"{tool_name} tool executed."}
                             )
 
                 elif isinstance(msg, AssistantMessage):
@@ -210,15 +210,18 @@ async def websocket_handler(websocket, context):
                 elif isinstance(msg, StreamEvent):
                     log.info("StreamEvent")
                     log.info(f"Event: {msg}")
-                    if msg.event["type"] == "message_start":
+                    if msg.event["type"] == "content_block_start":
                         await websocket.send_json({"event": "message_start"})
-                    elif msg.event["type"] == "message_stop":
+                    elif msg.event["type"] == "content_block_stop":
                         await websocket.send_json({"event": "message_stop"})
                     elif msg.event["type"] == "content_block_delta":
-                        delta_text = msg.event.get("delta", {}).get("text", "")
-                        await websocket.send_json({"result": delta_text})
-                    else:
-                        pass
+                        if msg.event["delta"]["type"] == "text_delta":
+                            text = msg.event.get("delta", {}).get("text", "")
+                            await websocket.send_json({"result": text})
+                        elif msg.event["delta"]["type"] == "input_json_delta":
+                            delta = msg.event.get("delta", {})
+                            partial_json = delta.get("partial_json", "")
+                            await websocket.send_json({"result": partial_json})
 
                 else:
                     log.warning(f"Unexpected message type found: {type(msg)}")
