@@ -153,7 +153,23 @@ async def websocket_handler(websocket, context):
 
             # Stream the response back to client
             async for msg in client.receive_response():
-                if isinstance(msg, UserMessage):
+                if isinstance(msg, StreamEvent):
+                    log.info("StreamEvent")
+                    log.info(f"Event: {msg}")
+                    if msg.event["type"] == "content_block_start":
+                        await websocket.send_json({"event": "content_block_start"})
+                    elif msg.event["type"] == "content_block_stop":
+                        await websocket.send_json({"event": "content_block_stop"})
+                    elif msg.event["type"] == "content_block_delta":
+                        if msg.event["delta"]["type"] == "text_delta":
+                            text = msg.event.get("delta", {}).get("text", "")
+                            await websocket.send_json({"result": text})
+                        elif msg.event["delta"]["type"] == "input_json_delta":
+                            delta = msg.event.get("delta", {})
+                            partial_json = delta.get("partial_json", "")
+                            await websocket.send_json({"result": partial_json})
+
+                elif isinstance(msg, UserMessage):
                     log.info("UserMessage")
                     log.info(f"User: {msg}")
                     for block in msg.content:
@@ -206,22 +222,6 @@ async def websocket_handler(websocket, context):
                     await websocket.send_json(
                         {"result": f"Completed. Cost: ${msg.total_cost_usd}"}
                     )
-
-                elif isinstance(msg, StreamEvent):
-                    log.info("StreamEvent")
-                    log.info(f"Event: {msg}")
-                    if msg.event["type"] == "content_block_start":
-                        await websocket.send_json({"event": "content_block_start"})
-                    elif msg.event["type"] == "content_block_stop":
-                        await websocket.send_json({"event": "content_block_stop"})
-                    elif msg.event["type"] == "content_block_delta":
-                        if msg.event["delta"]["type"] == "text_delta":
-                            text = msg.event.get("delta", {}).get("text", "")
-                            await websocket.send_json({"result": text})
-                        elif msg.event["delta"]["type"] == "input_json_delta":
-                            delta = msg.event.get("delta", {})
-                            partial_json = delta.get("partial_json", "")
-                            await websocket.send_json({"result": partial_json})
 
                 else:
                     log.warning(f"Unexpected message type found: {type(msg)}")
