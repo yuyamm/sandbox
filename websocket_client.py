@@ -22,6 +22,7 @@ async def send_message(
     ws_url: str,
     prompt: str,
     session_id: str | None = None,
+    agent_session_id: str | None = None,
     runtime_arn: str | None = None,
 ):
     """
@@ -31,12 +32,16 @@ async def send_message(
     Args:
         ws_url: WebSocket URL
         prompt: Message to send to the agent
-        session_id: Optional session ID for conversation continuity
+        session_id: Optional Claude Agent SDK session ID for conversation continuity
+        agent_session_id: Optional AgentCore Runtime session ID
         runtime_arn: Optional runtime ARN for AWS authentication
     """
-    if not session_id:
-        session_id = str(uuid.uuid4())
-        print(f"🆔 Session ID: {session_id}\n")
+    if not agent_session_id:
+        agent_session_id = str(uuid.uuid4())
+        print(f"🆔 Agent Session ID: {agent_session_id}\n")
+
+    if session_id:
+        print(f"🔄 Claude Session ID: {session_id}\n")
 
     try:
         # Check if this is an AWS connection (wss://)
@@ -60,7 +65,7 @@ async def send_message(
 
             # Generate authenticated WebSocket connection
             auth_url, headers = client.generate_ws_connection(
-                runtime_arn=runtime_arn, session_id=session_id
+                runtime_arn=runtime_arn, session_id=agent_session_id
             )
 
             # Use authenticated URL and headers
@@ -86,11 +91,14 @@ async def send_message(
         print(f"❌ Error: {e}")
 
 
-async def _handle_websocket(websocket, prompt: str, session_id: str):
+async def _handle_websocket(websocket, prompt: str, session_id: str | None):
     """Handle WebSocket communication"""
     try:
-        # Send message
-        await websocket.send(json.dumps({"prompt": prompt, "session_id": session_id}))
+        # Send message with optional session_id
+        message = {"prompt": prompt}
+        if session_id:
+            message["session_id"] = session_id
+        await websocket.send(json.dumps(message))
 
         # Track streaming state
         in_message_stream = False
@@ -102,6 +110,37 @@ async def _handle_websocket(websocket, prompt: str, session_id: str):
             if "error" in data:
                 print(f"❌ Error: {data['error']}")
                 break
+
+            # Handle tool permission requests
+            if data.get("type") == "tool_permission_request":
+                tool_name = data.get("tool_name", "Unknown")
+                tool_input = data.get("input", {})
+
+                print(f"\n⚠️  Permission required for tool: {tool_name}")
+                print(f"   Input: {json.dumps(tool_input, indent=2)}")
+
+                # Ask user for approval
+                while True:
+                    response = input("   Approve? (y/n): ").strip().lower()
+                    if response in ["y", "n"]:
+                        break
+                    print("   Please enter 'y' or 'n'")
+
+                approved = response == "y"
+
+                # Send approval response back to agent
+                await websocket.send(
+                    json.dumps(
+                        {"type": "tool_permission_response", "approved": approved}
+                    )
+                )
+
+                if approved:
+                    print("   ✅ Approved")
+                else:
+                    print("   ❌ Denied")
+
+                continue
 
             # Handle StreamEvent for message_start and message_stop
             if "event" in data:
@@ -136,20 +175,24 @@ async def _handle_websocket(websocket, prompt: str, session_id: str):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 2:
         print(
-            "Usage: python websocket_client.py <ws_url> <prompt> "
-            "[session_id] [runtime_arn]"
+            "Usage: python websocket_client.py <prompt> "
+            "[session_id] [agent_session_id] [ws_url] [runtime_arn]"
         )
         print("\nFor local development:")
-        print("  python websocket_client.py ws://localhost:8080/ws 'Hello!'")
+        print("  python websocket_client.py 'Hello!'")
+        print("  python websocket_client.py 'Continue' 'claude-session-123'")
         print("\nFor AWS deployment:")
-        print("  python websocket_client.py wss://... 'Hello!' '' 'arn:aws:...'")
+        print("  python websocket_client.py 'Hello!' '' '' 'wss://...' 'arn:aws:...'")
         sys.exit(1)
 
-    ws_url = sys.argv[1]
-    prompt = sys.argv[2]
-    session_id = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] else None
-    runtime_arn = sys.argv[4] if len(sys.argv) > 4 else None
+    prompt = sys.argv[1]
+    session_id = sys.argv[2] if len(sys.argv) > 2 and sys.argv[2] else None
+    agent_session_id = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] else None
+    ws_url = (
+        sys.argv[4] if len(sys.argv) > 4 and sys.argv[4] else "ws://localhost:8080/ws"
+    )
+    runtime_arn = sys.argv[5] if len(sys.argv) > 5 else None
 
-    asyncio.run(send_message(ws_url, prompt, session_id, runtime_arn))
+    asyncio.run(send_message(ws_url, prompt, session_id, agent_session_id, runtime_arn))

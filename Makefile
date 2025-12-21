@@ -10,18 +10,36 @@ dev:
 # Invoke agent (production)
 invoke:
 	@if [ -z "$(prompt)" ]; then \
-		echo "Error: prompt is required. Usage: make invoke prompt='your prompt here'"; \
+		echo "Error: prompt is required."; \
+		echo "Usage: make invoke prompt='your prompt' [session_id='session-id']"; \
+		echo ""; \
+		echo "Examples:"; \
+		echo "  make invoke prompt='Hello!'"; \
+		echo "  make invoke prompt='What is 5+3?' session_id='claude-session-123'"; \
 		exit 1; \
 	fi
-	uv run agentcore invoke '{"prompt": "$(prompt)"}'
+	@if [ -n "$(session_id)" ]; then \
+		uv run agentcore invoke '{"prompt": "$(prompt)", "session_id": "$(session_id)"}'; \
+	else \
+		uv run agentcore invoke '{"prompt": "$(prompt)"}'; \
+	fi
 
 # Invoke agent (development)
 invoke-dev:
 	@if [ -z "$(prompt)" ]; then \
-		echo "Error: prompt is required. Usage: make invoke-dev prompt='your prompt here'"; \
+		echo "Error: prompt is required."; \
+		echo "Usage: make invoke-dev prompt='your prompt' [session_id='session-id']"; \
+		echo ""; \
+		echo "Examples:"; \
+		echo "  make invoke-dev prompt='Hello!'"; \
+		echo "  make invoke-dev prompt='What is 5+3?' session_id='claude-session-123'"; \
 		exit 1; \
 	fi
-	uv run agentcore invoke '{"prompt": "$(prompt)"}' --dev
+	@if [ -n "$(session_id)" ]; then \
+		uv run agentcore invoke '{"prompt": "$(prompt)", "session_id": "$(session_id)"}' --dev; \
+	else \
+		uv run agentcore invoke '{"prompt": "$(prompt)"}' --dev; \
+	fi
 
 # Launch agent
 launch:
@@ -36,37 +54,31 @@ launch:
 ws-dev:
 	@if [ -z "$(prompt)" ]; then \
 		echo "Error: prompt is required."; \
-		echo "Usage: make ws-dev prompt='your prompt' [session_id='session-id']"; \
+		echo "Usage: make ws-dev prompt='your prompt' [session_id='session-id'] [agent_session_id='agent-session-id']"; \
 		echo ""; \
 		echo "Examples:"; \
 		echo "  make ws-dev prompt='Hello!'"; \
-		echo "  make ws-dev prompt='What is 5+3?' session_id='my-session-123'"; \
+		echo "  make ws-dev prompt='What is 5+3?' session_id='claude-session-123'"; \
+		echo "  make ws-dev prompt='Continue' session_id='claude-123' agent_session_id='agent-456'"; \
 		exit 1; \
 	fi
-	@if [ -n "$(session_id)" ]; then \
-		uv run python websocket_client.py "ws://localhost:8080/ws" "$(prompt)" "$(session_id)"; \
-	else \
-		uv run python websocket_client.py "ws://localhost:8080/ws" "$(prompt)" ""; \
-	fi
+	@uv run python websocket_client.py "$(prompt)" "$(session_id)" "$(agent_session_id)"
 
 # WebSocket client (production)
 ws:
 	@if [ -z "$(prompt)" ]; then \
 		echo "Error: prompt is required."; \
-		echo "Usage: make ws prompt='your prompt' [session_id='session-id']"; \
+		echo "Usage: make ws prompt='your prompt' [session_id='session-id'] [agent_session_id='agent-session-id']"; \
 		echo ""; \
 		echo "Examples:"; \
 		echo "  make ws prompt='Hello!'"; \
-		echo "  make ws prompt='What is 5+3?' session_id='my-session-123'"; \
+		echo "  make ws prompt='What is 5+3?' session_id='claude-session-123'"; \
+		echo "  make ws prompt='Continue' session_id='claude-123' agent_session_id='agent-456'"; \
 		exit 1; \
 	fi; \
 	runtime_arn="arn:aws:bedrock-agentcore:ap-northeast-1:585768166368:runtime/hello_agent-kzxOU1FBzD"; \
 	ws_url="wss://bedrock-agentcore.ap-northeast-1.amazonaws.com/runtimes/$$runtime_arn/ws"; \
-	if [ -n "$(session_id)" ]; then \
-		uv run python websocket_client.py "$$ws_url" "$(prompt)" "$(session_id)" "$$runtime_arn"; \
-	else \
-		uv run python websocket_client.py "$$ws_url" "$(prompt)" "" "$$runtime_arn"; \
-	fi
+	uv run python websocket_client.py "$(prompt)" "$(session_id)" "$(agent_session_id)" "$$ws_url" "$$runtime_arn"
 
 # Show help
 help:
@@ -76,12 +88,16 @@ help:
 	@echo "                       (uv run agentcore dev)"
 	@echo ""
 	@echo "  make invoke-dev    - Invoke agent in development mode via HTTP"
-	@echo "                       Usage: make invoke-dev prompt='your prompt'"
-	@echo "                       (uv run agentcore invoke '{\"prompt\": \"...\"}' --dev)"
+	@echo "                       Usage: make invoke-dev prompt='your prompt' [session_id='id']"
+	@echo "                       Examples:"
+	@echo "                         make invoke-dev prompt='Hello!'"
+	@echo "                         make invoke-dev prompt='What is 5+3?' session_id='my-session'"
 	@echo ""
 	@echo "  make invoke        - Invoke agent in production mode via HTTP"
-	@echo "                       Usage: make invoke prompt='your prompt'"
-	@echo "                       (uv run agentcore invoke '{\"prompt\": \"...\"}' )"
+	@echo "                       Usage: make invoke prompt='your prompt' [session_id='id']"
+	@echo "                       Examples:"
+	@echo "                         make invoke prompt='Hello!'"
+	@echo "                         make invoke prompt='What is 5+3?' session_id='my-session'"
 	@echo ""
 	@echo "  make ws-dev        - Invoke agent development mode via WebSocket"
 	@echo "                       Usage: make ws-dev prompt='your prompt' [session_id='id']"
