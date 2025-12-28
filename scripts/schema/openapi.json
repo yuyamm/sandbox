@@ -1,0 +1,733 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+      "title": "デフォルトモジュール",
+      "description": "RESTful API for managing tasks with CRUD operations",
+      "version": "1.0.0"
+  },
+  "tags": [
+      {
+          "name": "Tasks"
+      }
+  ],
+  "paths": {
+      "/tasks": {
+          "get": {
+              "summary": "List all tasks",
+              "deprecated": false,
+              "description": "",
+              "tags": [
+                  "Tasks"
+              ],
+              "parameters": [
+                  {
+                      "name": "with_metadata",
+                      "in": "query",
+                      "description": "Include pagination metadata in response",
+                      "required": false,
+                      "schema": {
+                          "type": "boolean"
+                      }
+                  }
+              ],
+              "responses": {
+                  "200": {
+                      "description": "Returns tasks in different formats based on query parameters",
+                      "content": {
+                          "application/json": {
+                              "schema": {
+                                  "oneOf": [
+                                      {
+                                          "type": "array",
+                                          "description": "Simple array of tasks (default)",
+                                          "items": {
+                                              "$ref": "#/components/schemas/Task"
+                                          }
+                                      },
+                                      {
+                                          "type": "object",
+                                          "description": "Tasks with pagination metadata",
+                                          "properties": {
+                                              "data": {
+                                                  "type": "array",
+                                                  "items": {
+                                                      "$ref": "#/components/schemas/Task"
+                                                  }
+                                              },
+                                              "meta": {
+                                                  "$ref": "#/components/schemas/PaginationMeta"
+                                              }
+                                          },
+                                          "required": [
+                                              "data",
+                                              "meta"
+                                          ]
+                                      }
+                                  ]
+                              },
+                              "examples": {
+                                  "1": {
+                                      "summary": "Simple array response",
+                                      "value": [
+                                          {
+                                              "id": 1,
+                                              "title": "Sample Task 293",
+                                              "description": "This is a sample task description",
+                                              "status": "todo",
+                                              "priority": "medium",
+                                              "due_date": "2025-12-07T13:44:39.601Z",
+                                              "created_at": "2025-11-30T13:44:39.601Z",
+                                              "updated_at": "2025-11-30T13:44:39.601Z"
+                                          },
+                                          {
+                                              "id": 2,
+                                              "title": "Sample Task 703",
+                                              "description": "This is a sample task description",
+                                              "status": "todo",
+                                              "priority": "medium",
+                                              "due_date": "2025-12-07T13:44:39.602Z",
+                                              "created_at": "2025-11-30T13:44:39.602Z",
+                                              "updated_at": "2025-11-30T13:44:39.602Z"
+                                          },
+                                          {
+                                              "id": 3,
+                                              "title": "Sample Task 946",
+                                              "description": "This is a sample task description",
+                                              "status": "todo",
+                                              "priority": "medium",
+                                              "due_date": "2025-12-07T13:44:39.602Z",
+                                              "created_at": "2025-11-30T13:44:39.602Z",
+                                              "updated_at": "2025-11-30T13:44:39.602Z"
+                                          }
+                                      ]
+                                  },
+                                  "2": {
+                                      "summary": "Response with pagination metadata",
+                                      "value": {
+                                          "data": [
+                                              {
+                                                  "id": 1,
+                                                  "title": "Sample Task 293",
+                                                  "description": "This is a sample task description",
+                                                  "status": "todo",
+                                                  "priority": "medium",
+                                                  "due_date": "2025-12-07T13:44:39.601Z",
+                                                  "created_at": "2025-11-30T13:44:39.601Z",
+                                                  "updated_at": "2025-11-30T13:44:39.601Z"
+                                              },
+                                              {
+                                                  "id": 2,
+                                                  "title": "Sample Task 703",
+                                                  "description": "This is a sample task description",
+                                                  "status": "todo",
+                                                  "priority": "medium",
+                                                  "due_date": "2025-12-07T13:44:39.602Z",
+                                                  "created_at": "2025-11-30T13:44:39.602Z",
+                                                  "updated_at": "2025-11-30T13:44:39.602Z"
+                                              }
+                                          ],
+                                          "meta": {
+                                              "total": 2,
+                                              "page": 1,
+                                              "per_page": 10
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      },
+                      "headers": {}
+                  }
+              },
+              "security": []
+          },
+          "post": {
+              "summary": "Create a new task",
+              "deprecated": false,
+              "description": "",
+              "tags": [
+                  "Tasks"
+              ],
+              "parameters": [],
+              "requestBody": {
+                  "content": {
+                      "application/x-www-form-urlencoded": {
+                          "schema": {
+                              "type": "object",
+                              "properties": {
+                                  "task": {
+                                      "type": "object",
+                                      "properties": {
+                                          "title": {
+                                              "type": "string"
+                                          },
+                                          "description": {
+                                              "type": "string"
+                                          },
+                                          "status": {
+                                              "type": "string"
+                                          },
+                                          "priority": {
+                                              "type": "string"
+                                          },
+                                          "due_date": {
+                                              "type": "string"
+                                          }
+                                      },
+                                      "required": [
+                                          "title",
+                                          "description",
+                                          "status",
+                                          "priority",
+                                          "due_date"
+                                      ],
+                                      "example": ""
+                                  }
+                              },
+                              "required": [
+                                  "task"
+                              ]
+                          }
+                      }
+                  }
+              },
+              "responses": {
+                  "201": {
+                      "description": "returns status code 201",
+                      "content": {
+                          "application/json": {
+                              "schema": {
+                                  "type": "object",
+                                  "properties": {
+                                      "id": {
+                                          "type": "integer"
+                                      },
+                                      "title": {
+                                          "type": "string"
+                                      },
+                                      "description": {
+                                          "type": "string"
+                                      },
+                                      "status": {
+                                          "type": "string"
+                                      },
+                                      "priority": {
+                                          "type": "string"
+                                      },
+                                      "due_date": {
+                                          "type": "string"
+                                      },
+                                      "created_at": {
+                                          "type": "string"
+                                      },
+                                      "updated_at": {
+                                          "type": "string"
+                                      }
+                                  },
+                                  "required": [
+                                      "id",
+                                      "title",
+                                      "description",
+                                      "status",
+                                      "priority",
+                                      "due_date",
+                                      "created_at",
+                                      "updated_at"
+                                  ]
+                              },
+                              "example": {
+                                  "id": 4,
+                                  "title": "Buy groceries",
+                                  "description": "Milk, bread, eggs",
+                                  "status": "todo",
+                                  "priority": "high",
+                                  "due_date": "2025-12-01T13:44:39.000Z",
+                                  "created_at": "2025-11-30T13:44:39.628Z",
+                                  "updated_at": "2025-11-30T13:44:39.628Z"
+                              }
+                          }
+                      },
+                      "headers": {}
+                  },
+                  "422": {
+                      "description": "returns a validation error for priority",
+                      "content": {
+                          "application/json": {
+                              "schema": {
+                                  "type": "object",
+                                  "properties": {
+                                      "errors": {
+                                          "type": "object",
+                                          "properties": {
+                                              "title": {
+                                                  "type": "array",
+                                                  "items": {
+                                                      "type": "string"
+                                                  }
+                                              },
+                                              "status": {
+                                                  "type": "array",
+                                                  "items": {
+                                                      "type": "string"
+                                                  }
+                                              },
+                                              "priority": {
+                                                  "type": "array",
+                                                  "items": {
+                                                      "type": "string"
+                                                  }
+                                              }
+                                          }
+                                      }
+                                  },
+                                  "required": [
+                                      "errors"
+                                  ]
+                              },
+                              "example": {
+                                  "errors": {
+                                      "title": [
+                                          "can't be blank"
+                                      ],
+                                      "status": [
+                                          "is not included in the list"
+                                      ],
+                                      "priority": [
+                                          "is not included in the list"
+                                      ]
+                                  }
+                              }
+                          }
+                      },
+                      "headers": {}
+                  }
+              },
+              "security": []
+          }
+      },
+      "/tasks/{id}": {
+          "delete": {
+              "summary": "Delete a task",
+              "deprecated": false,
+              "description": "",
+              "tags": [
+                  "Tasks"
+              ],
+              "parameters": [
+                  {
+                      "name": "id",
+                      "in": "path",
+                      "description": "",
+                      "required": true,
+                      "example": 999999,
+                      "schema": {
+                          "type": "integer"
+                      }
+                  }
+              ],
+              "responses": {
+                  "204": {
+                      "description": "deletes the task",
+                      "headers": {}
+                  },
+                  "404": {
+                      "description": "returns status code 404",
+                      "content": {
+                          "application/json": {
+                              "schema": {
+                                  "type": "object",
+                                  "properties": {
+                                      "error": {
+                                          "type": "string"
+                                      }
+                                  },
+                                  "required": [
+                                      "error"
+                                  ]
+                              },
+                              "example": {
+                                  "error": "Task not found"
+                              }
+                          }
+                      },
+                      "headers": {}
+                  }
+              },
+              "security": []
+          },
+          "get": {
+              "summary": "Get a specific task",
+              "deprecated": false,
+              "description": "",
+              "tags": [
+                  "Tasks"
+              ],
+              "parameters": [
+                  {
+                      "name": "id",
+                      "in": "path",
+                      "description": "",
+                      "required": true,
+                      "example": 999999,
+                      "schema": {
+                          "type": "integer"
+                      }
+                  }
+              ],
+              "responses": {
+                  "200": {
+                      "description": "returns task with correct attributes",
+                      "content": {
+                          "application/json": {
+                              "schema": {
+                                  "type": "object",
+                                  "properties": {
+                                      "id": {
+                                          "type": "integer"
+                                      },
+                                      "title": {
+                                          "type": "string"
+                                      },
+                                      "description": {
+                                          "type": "string"
+                                      },
+                                      "status": {
+                                          "type": "string"
+                                      },
+                                      "priority": {
+                                          "type": "string"
+                                      },
+                                      "due_date": {
+                                          "type": "string"
+                                      },
+                                      "created_at": {
+                                          "type": "string"
+                                      },
+                                      "updated_at": {
+                                          "type": "string"
+                                      }
+                                  },
+                                  "required": [
+                                      "id",
+                                      "title",
+                                      "description",
+                                      "status",
+                                      "priority",
+                                      "due_date",
+                                      "created_at",
+                                      "updated_at"
+                                  ]
+                              },
+                              "example": {
+                                  "id": 1,
+                                  "title": "Sample Task 71",
+                                  "description": "This is a sample task description",
+                                  "status": "todo",
+                                  "priority": "medium",
+                                  "due_date": "2025-12-07T13:44:39.611Z",
+                                  "created_at": "2025-11-30T13:44:39.611Z",
+                                  "updated_at": "2025-11-30T13:44:39.611Z"
+                              }
+                          }
+                      },
+                      "headers": {}
+                  },
+                  "404": {
+                      "description": "returns a not found message",
+                      "content": {
+                          "application/json": {
+                              "schema": {
+                                  "type": "object",
+                                  "properties": {
+                                      "error": {
+                                          "type": "string"
+                                      }
+                                  },
+                                  "required": [
+                                      "error"
+                                  ]
+                              },
+                              "example": {
+                                  "error": "Task not found"
+                              }
+                          }
+                      },
+                      "headers": {}
+                  }
+              },
+              "security": []
+          },
+          "patch": {
+              "summary": "Update a task",
+              "deprecated": false,
+              "description": "",
+              "tags": [
+                  "Tasks"
+              ],
+              "parameters": [
+                  {
+                      "name": "id",
+                      "in": "path",
+                      "description": "",
+                      "required": true,
+                      "example": 1,
+                      "schema": {
+                          "type": "integer"
+                      }
+                  }
+              ],
+              "requestBody": {
+                  "content": {
+                      "application/x-www-form-urlencoded": {
+                          "schema": {
+                              "type": "object",
+                              "properties": {
+                                  "task": {
+                                      "type": "object",
+                                      "properties": {
+                                          "title": {
+                                              "type": "string"
+                                          },
+                                          "status": {
+                                              "type": "string"
+                                          }
+                                      },
+                                      "required": [
+                                          "title",
+                                          "status"
+                                      ],
+                                      "example": ""
+                                  }
+                              },
+                              "required": [
+                                  "task"
+                              ]
+                          }
+                      }
+                  }
+              },
+              "responses": {
+                  "200": {
+                      "description": "returns status code 200",
+                      "content": {
+                          "application/json": {
+                              "schema": {
+                                  "type": "object",
+                                  "properties": {
+                                      "title": {
+                                          "type": "string"
+                                      },
+                                      "status": {
+                                          "type": "string"
+                                      },
+                                      "id": {
+                                          "type": "integer"
+                                      },
+                                      "description": {
+                                          "type": "string"
+                                      },
+                                      "priority": {
+                                          "type": "string"
+                                      },
+                                      "due_date": {
+                                          "type": "string"
+                                      },
+                                      "created_at": {
+                                          "type": "string"
+                                      },
+                                      "updated_at": {
+                                          "type": "string"
+                                      }
+                                  },
+                                  "required": [
+                                      "title",
+                                      "status",
+                                      "id",
+                                      "description",
+                                      "priority",
+                                      "due_date",
+                                      "created_at",
+                                      "updated_at"
+                                  ]
+                              },
+                              "example": {
+                                  "title": "Updated title",
+                                  "status": "in_progress",
+                                  "id": 1,
+                                  "description": "This is a sample task description",
+                                  "priority": "medium",
+                                  "due_date": "2025-12-07T13:44:39.657Z",
+                                  "created_at": "2025-11-30T13:44:39.657Z",
+                                  "updated_at": "2025-11-30T13:44:39.659Z"
+                              }
+                          }
+                      },
+                      "headers": {}
+                  },
+                  "404": {
+                      "description": "returns a not found message",
+                      "content": {
+                          "application/json": {
+                              "schema": {
+                                  "type": "object",
+                                  "properties": {
+                                      "error": {
+                                          "type": "string"
+                                      }
+                                  },
+                                  "required": [
+                                      "error"
+                                  ]
+                              },
+                              "example": {
+                                  "error": "Task not found"
+                              }
+                          }
+                      },
+                      "headers": {}
+                  },
+                  "422": {
+                      "description": "returns a validation failure message",
+                      "content": {
+                          "application/json": {
+                              "schema": {
+                                  "type": "object",
+                                  "properties": {
+                                      "errors": {
+                                          "type": "object",
+                                          "properties": {
+                                              "title": {
+                                                  "type": "array",
+                                                  "items": {
+                                                      "type": "string"
+                                                  }
+                                              }
+                                          },
+                                          "required": [
+                                              "title"
+                                          ]
+                                      }
+                                  },
+                                  "required": [
+                                      "errors"
+                                  ]
+                              },
+                              "example": {
+                                  "errors": {
+                                      "title": [
+                                          "can't be blank"
+                                      ]
+                                  }
+                              }
+                          }
+                      },
+                      "headers": {}
+                  }
+              },
+              "security": []
+          }
+      }
+  },
+  "webhooks": {},
+  "components": {
+      "schemas": {
+          "Task": {
+              "type": "object",
+              "description": "A task with title, description, status, priority, and due date",
+              "properties": {
+                  "id": {
+                      "type": "integer",
+                      "description": "Unique identifier for the task"
+                  },
+                  "title": {
+                      "type": "string",
+                      "description": "Task title"
+                  },
+                  "description": {
+                      "type": [
+                          "string",
+                          "null"
+                      ],
+                      "description": "Detailed task description"
+                  },
+                  "status": {
+                      "type": "string",
+                      "description": "Current status of the task",
+                      "enum": [
+                          "todo",
+                          "in_progress",
+                          "done"
+                      ],
+                      "default": "todo"
+                  },
+                  "priority": {
+                      "type": "string",
+                      "description": "Priority level",
+                      "enum": [
+                          "low",
+                          "medium",
+                          "high"
+                      ],
+                      "default": "medium"
+                  },
+                  "due_date": {
+                      "type": [
+                          "string",
+                          "null"
+                      ],
+                      "format": "date-time",
+                      "description": "Task due date and time"
+                  },
+                  "created_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Timestamp when the task was created"
+                  },
+                  "updated_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Timestamp when the task was last updated"
+                  }
+              },
+              "required": [
+                  "id",
+                  "title",
+                  "status",
+                  "priority",
+                  "created_at",
+                  "updated_at"
+              ]
+          },
+          "PaginationMeta": {
+              "type": "object",
+              "description": "Pagination metadata",
+              "properties": {
+                  "total": {
+                      "type": "integer",
+                      "description": "Total number of items",
+                      "minimum": 0
+                  },
+                  "page": {
+                      "type": "integer",
+                      "description": "Current page number",
+                      "minimum": 1
+                  },
+                  "per_page": {
+                      "type": "integer",
+                      "description": "Number of items per page",
+                      "minimum": 1
+                  }
+              },
+              "required": [
+                  "total",
+                  "page",
+                  "per_page"
+              ]
+          }
+      },
+      "responses": {},
+      "securitySchemes": {}
+  },
+  "servers": [],
+  "security": []
+}
